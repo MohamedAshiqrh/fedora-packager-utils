@@ -68,6 +68,51 @@ def verify_rpms(destdir, packages, pkgcount):
         print " \n \t \t \tCRITICAL ERROR ******** I failed to verify all the RPMs in the directory %s" % (destdir)
     return True
 
+def repo_creation(epeldir,fedoradir):
+    build_list =["x86_64","i386","i686","noarch","armhfp","armv7hl","ppc","ppc64","SRPMS"]
+
+    for dirs in os.listdir(epeldir):
+        if dirs == "epel-5":
+                epel5dirs=epeldir+"/"+dirs
+                for e5dir in os.listdir(epel5dirs):
+                    if e5dir in build_list:
+                        print "\ncreaterepo -v -s "+epel5dirs+'/'+e5dir+"\n"
+                        os.system("createrepo -s sha "+epel5dirs+'/'+e5dir)
+        if dirs in ["epel-6","epel-7"]:
+                edirs = epeldir+'/'+dirs
+                for edir in os.listdir(edirs):
+                    if edir in build_list:
+                        print "\ncreaterepo -v "+edirs+'/'+edir+"\n"
+                        os.system("createrepo "+edirs+'/'+edir)
+
+    for dirs in os.listdir(fedoradir):
+        if dirs in fedora_dirs:
+                fdirs = fedoradir+'/'+dirs
+                for fdir in os.listdir(fdirs):
+                    if fdir in build_list:
+                        print "\ncreaterepo -v "+fdirs+'/'+fdir+"\n"
+                        os.system("createrepo "+fdirs+'/'+fdir)
+
+    print "\nCheck the rpm numbers in each directorys"
+    for dirs in os.listdir(epeldir):
+        if dirs in epel_dirs:
+                edirs = epeldir+'/'+dirs
+                for edir in os.listdir(edirs):
+                    if edir in build_list:
+                        orig_path=edirs+'/'+edir+'/*.rpm'
+                        print "\n"+edirs+'/'+edir
+                        print len(glob.glob(orig_path))
+
+    for dirs in os.listdir(fedoradir):
+        if dirs in fedora_dirs:
+                fdirs = fedoradir+'/'+dirs
+                for fdir in os.listdir(fdirs):
+                    if fdir in build_list:
+                        orig_path=fdirs+'/'+fdir+'/*.rpm'
+                        print "\n"+fdirs+'/'+fdir
+                        print len(glob.glob(orig_path))
+ 
+                              
 
 def list_rpms(sourcedir):
 
@@ -104,7 +149,6 @@ def rearrange_packages(source_rearrange_fedoradir, source_rearrange_epeldir):
 		os.system("mv"+" "+"el7"+" "+ "epel-7")
     os.chdir(source_rearrange_fedoradir)
 
-
     for dirs in os.listdir(source_rearrange_fedoradir):
 	if dirs == "fc19":
 		os.system("mv"+" "+"fc19"+" "+ "fedora-19")
@@ -124,7 +168,6 @@ def rearrange_packages(source_rearrange_fedoradir, source_rearrange_epeldir):
     for i in epel_dirs:
 	os.system("mv"+" "+i+"/src"+" "+i+"/SRPMS")
 
-
     fedoradir=source_rearrange_fedoradir
     epeldir=source_rearrange_epeldir
     rpm_signing(fedoradir,epeldir)
@@ -136,7 +179,6 @@ def rpm_signing(fedoradir, epeldir):
     os.chdir(epeldir)
     os.system("rpmsign"+" "+"--addsign"+" "+"epel-[67]/*/*.rpm") 
     print "EPEL RPMS signed properly"
-
 
 def link_creation(fedoradir, epeldir):
     os.chdir(epeldir)
@@ -164,6 +206,7 @@ def link_creation(fedoradir, epeldir):
 		os.system("ln"+" "+"-s"+" "+"epel-7/"+" "+"epel-7Workstation")    		
 		os.system("ln"+" "+"-s"+" "+"epel-7/"+" "+"epel-7ComputeNode")    		
     print "Required links are created for epel dirs"
+
 def post_spread(where):
 
     """
@@ -182,10 +225,10 @@ def post_spread(where):
         cmd = "--backup --suffix \"-`date +\"%F-%T\"`\""
         if "fc" in dirs:
             print "Fedora:%s" %(dirs)
-            os.system("mv"+ " "+"fc*"+" "+fedora_base+" "+cmd)
+            os.system("mv"+ " "+where+"/fc*"+" "+fedora_base+" "+cmd)
         if "el" in dirs:
             print "EPEL.repo:%s" %(dirs)
-            os.system("mv"+ " "+"el*"+" "+epel_base+" "+cmd)
+            os.system("mv"+ " "+where+"/el*"+" "+epel_base+" "+cmd)
     
     print "Directory sorting done"
     return True
@@ -263,25 +306,25 @@ def pull_packages(sourcedir):
     :return:
     """
     os.chdir(sourcedir)
-    task_id = raw_input ("Enter path for taskid (ex:7034519):")
+    task_ids = raw_input ("Enter path for taskid (ex:7034519):").split(",")
+    task_id_list = [str(int(x)-1) for x in task_ids]
+    print task_id_list
     count = int(raw_input("no of architectures:"))
-
-    for i in range(0,count):
-        parent_dir = task_id[-4:]
-        task_id_int=int(task_id)+1
-        parent_dir_int=int(parent_dir)+1
-        task_id= str(task_id_int)
-        parent_dir=str(parent_dir_int)
-        pullcmd = 'wget -e robots=off --cut-dirs=4 --user-agent=Mozilla/5.0 --reject="index.html*" --reject="*.log" ' \
-              '--no-parent --recursive --relative --level=1 --no-directories ' \
-              'https://kojipkgs.fedoraproject.org//work/tasks/'+parent_dir+'/'+task_id+'/'
-        ret = os.system(pullcmd)
-        if ret:
-
-            print "Error occurred.. please check and rerun if required"
-        else:
-            print " \t Successfully downloaded.. Verify downloaded RPMS"
-
+    for task_id in task_id_list:
+        for i in range(0,count):
+            parent_dir = task_id[-4:]
+            task_id_int=int(task_id)+1
+            parent_dir_int=int(parent_dir)+1
+            task_id= str(task_id_int)
+            parent_dir=str(parent_dir_int)
+            pullcmd = 'wget -e robots=off --cut-dirs=4 --user-agent=Mozilla/5.0 --reject="index.html*" --reject="*.log" ' \
+                  '--no-parent --recursive --relative --level=1 --no-directories ' \
+                  'https://kojipkgs.fedoraproject.org//work/tasks/'+parent_dir+'/'+task_id+'/'
+            ret = os.system(pullcmd)
+            if ret:
+                print "Error occurred.. please check and re-run if required"
+            else:
+                print " \t Successfully downloaded.. Verify downloaded RPMS"
 
 
 def main():
@@ -303,17 +346,22 @@ def main():
     
     parser.add_option("-l", "--link",
                       action="store_true", dest="link", default=False,
-                      help=" Create links for epel5,6,7 directories.")
+                      help="Create links for epel5,6,7 directories.")
+
+    parser.add_option("-c","--repocreation",
+                      action="store_true", dest="repocreation", default=False,
+                      help="Creates repodata for Fedora and EPEL")
 
     options, arguments = parser.parse_args()
 
-    anyopt = [ options.pull , options.spread, options.rearrange, options.link]
+    anyopt = [ options.pull , options.spread, options.rearrange, options.link, options.repocreation]
     check = [o for o in anyopt if o]
     if not check:
-        print  "You missed one of the must required option.. reread and execute.... exiting ."
+        print  "You missed one of the most required option.. re-read and execute.... exiting ."
         parser.print_help()
 
         sys.exit(1)
+
     if options.pull:
         print "action: pull"
         pull_dir = raw_input("Enter the directory path to pull packages :")
@@ -323,36 +371,44 @@ def main():
         print "action: spread"
         source_spread_dir = raw_input("Enter the source directory where the rpms are stored.:")
    
-        dest_spread_dir = raw_input("Enter the destination directory where the rpms are stored.:")
+        dest_spread_dir = raw_input("Enter the destination directory where the rpms should be spread.:")
 
         spread_packages(source_spread_dir, dest_spread_dir)
     if options.rearrange:
 	print "action:rearrange"
-	source_rearrange_dir = raw_input("Enter the directory full path to rearrange:")
-
-    	os.chdir(source_rearrange_dir)
+	source_rearrange_dir = raw_input("Enter the directory to rearrange:")
+        source_rearrange_dir = os.path.abspath(source_rearrange_dir)
+        count = 0
     	for dirs in os.listdir(source_rearrange_dir):
 		if dirs == "EPEL.repo":
-			source_rearrange_epeldir = source_rearrange_dir+'/'+'EPEL.repo'
-		if dirs == "Fedora":
-			source_rearrange_fedoradir = source_rearrange_dir+'/'+'Fedora'
-    	fedoradir=source_rearrange_fedoradir
-    	epeldir=source_rearrange_epeldir
-	rearrange_packages(fedoradir, epeldir)
+			epeldir = source_rearrange_dir+'/'+'EPEL.repo'
+		elif dirs == "Fedora":
+			fedoradir = source_rearrange_dir+'/'+'Fedora'
+        rearrange_packages(fedoradir, epeldir)
+
     if options.link:
 	print "action:link"
-	source_link_dir = raw_input("Enter the directory (where EPEL.repo and Fedora) full path : ")
-
-    	os.chdir(source_link_dir)
+	source_link_dir = raw_input("Enter the directory (where EPEL.repo and Fedora are present): ")
+        source_link_dir = os.path.abspath(source_link_dir)
     	for dirs in os.listdir(source_link_dir):
 		if dirs == "EPEL.repo":
-			source_link_epeldir = source_link_dir+'/'+'EPEL.repo'
-		if dirs == "Fedora":
-			source_link_fedoradir = source_link_dir+'/'+'Fedora'
-    	fedoradir=source_link_fedoradir
-    	epeldir=source_link_epeldir
+			epeldir = source_link_dir+'/'+'EPEL.repo'
+		elif dirs == "Fedora":
+			fedoradir = source_link_dir+'/'+'Fedora'
 	link_creation(fedoradir, epeldir)
 
+    if options.repocreation:
+        print "action:repocreation"
+        if not os.geteuid() == 0:
+                sys.exit('Script must be run as root')
+        source_repo_dir = raw_input("Enter the directory (where EPEL.repo and Fedora are present): ")
+        source_repo_dir = os.path.abspath(source_repo_dir)
+        for dirs in os.listdir(source_repo_dir):
+                if dirs == "EPEL.repo":
+                        epeldir = source_repo_dir+'/'+'EPEL.repo'
+                elif dirs == "Fedora":
+                        fedoradir = source_repo_dir+'/'+'Fedora'
+        repo_creation(epeldir,fedoradir)
 
 if __name__ == '__main__':
     #print "Starting %s ......." % (__name__)
