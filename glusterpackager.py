@@ -420,10 +420,6 @@ def main():
 	if fedoradir == '' or epeldir == '':
                 print "EPEL.repo or Fedora not found ... Exiting"
                 sys.exit(1)
-        os.mkdir(source_link_dir+"/CentOS")
-        os.mkdir(source_link_dir+"/RHEL")
-	os.system("ln"+" "+"-s"+" "+epeldir+"/* "+source_link_dir+"/RHEL")
-	os.system("ln"+" "+"-s"+" "+epeldir+"/* "+source_link_dir+"/CentOS")
 	link_creation(fedoradir, epeldir)
 
     if options.repocreation:
@@ -441,10 +437,6 @@ def main():
                 print "EPEL.repo or Fedora not found ... Exiting"
                 sys.exit(1)
         repo_creation(fedoradir,epeldir)
-        os.mkdir(source_repo_dir+"/CentOS")
-        os.mkdir(source_repo_dir+"/RHEL")
-	os.system("ln"+" "+"-s"+" "+epeldir+"/* "+source_all_dir+"/RHEL")
-	os.system("ln"+" "+"-s"+" "+epeldir+"/* "+source_all_dir+"/CentOS")
 
     if options.runall:
         print "action:all"
@@ -486,11 +478,6 @@ def main():
         if not ret:
                 sys.exit("Repo creation Failed")
         print "\n action:repo creation *complete* \n\nALL ACTION COMPLETE"
-        os.chdir(curr_dir)
-        os.mkdir(source_all_dir+"/CentOS")
-        os.mkdir(source_all_dir+"/RHEL")
-	os.system("ln"+" "+"-s"+" "+epeldir+"/* "+source_all_dir+"/RHEL")
-	os.system("ln"+" "+"-s"+" "+epeldir+"/* "+source_all_dir+"/CentOS")
 
 if __name__ == '__main__':
     #print "Starting %s ......." % (__name__)
