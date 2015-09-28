@@ -166,7 +166,7 @@ def rearrange_packages(source_rearrange_fedoradir, source_rearrange_epeldir):
 		os.system("mv"+" "+"fc23"+" "+ "fedora-23")
 	if dirs == "fc24":
 		os.system("mv"+" "+"fc24"+" "+ "fedora-24")
-	    print source_rearrange_fedoradir
+	print source_rearrange_fedoradir
     for i in fedora_dirs:
 	os.system("mv"+" "+i+"/src"+" "+i+"/SRPMS")
 
